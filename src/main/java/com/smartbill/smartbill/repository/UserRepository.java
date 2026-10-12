@@ -1,3 +1,4 @@
+```java
 package com.smartbill.smartbill.repository;
 
 import com.smartbill.smartbill.model.User;
@@ -10,4 +11,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     Optional<User> findByMobile(String mobile);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByMobile(String mobile);
 }
+```
