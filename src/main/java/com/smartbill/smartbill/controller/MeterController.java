@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/meters")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:3000"})
+@CrossOrigin(origins = {"https://smartbill-frontend-hazel.vercel.app"})
 public class MeterController {
 
     private final MeterRepository meterRepository;
