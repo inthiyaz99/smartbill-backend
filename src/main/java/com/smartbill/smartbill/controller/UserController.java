@@ -17,8 +17,8 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(
-    origins = "*",
-    allowedHeaders = "*",
+    origins = "https://smartbill-frontend-hazel.vercel.app",
+    allowedHeaders = "https://smartbill-frontend-hazel.vercel.app",
     methods = {
         RequestMethod.GET,
         RequestMethod.POST,
