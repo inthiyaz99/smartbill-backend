@@ -7,7 +7,6 @@ import com.smartbill.smartbill.repository.UserRepository;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -17,12 +16,8 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
-
 @CrossOrigin(
-    origins = {
-        "https://smartbill-frontend-hazel.vercel.app",
-        "https://smartbill-frontend-myjnv4whz-inthiyaz99.vercel.app"
-    },
+    origins = "*",
     allowedHeaders = "*",
     methods = {
         RequestMethod.GET,
@@ -37,6 +32,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final LoginHistoryRepository loginHistoryRepository;
+
     private final BCryptPasswordEncoder passwordEncoder =
             new BCryptPasswordEncoder();
 
@@ -63,7 +59,7 @@ public class UserController {
                     .body("Name, email, mobile and password are required");
         }
 
-        String name = user.getFullName().trim();
+        String fullName = user.getFullName().trim();
         String email = user.getEmail().trim().toLowerCase();
         String mobile = user.getMobile().trim();
 
@@ -82,7 +78,7 @@ public class UserController {
                     .body("Mobile number already registered");
         }
 
-        user.setFullName(name);
+        user.setFullName(fullName);
         user.setEmail(email);
         user.setMobile(mobile);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -119,31 +115,28 @@ public class UserController {
         }
 
         if (user.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
+            return ResponseEntity.badRequest()
+                    .body("User not found");
         }
+
+        User existingUser = user.get();
 
         if (loginUser.getPassword() == null
                 || !passwordEncoder.matches(
                         loginUser.getPassword(),
-                        user.get().getPassword())) {
-            return ResponseEntity.badRequest().body("Invalid password");
+                        existingUser.getPassword())) {
+            return ResponseEntity.badRequest()
+                    .body("Invalid password");
         }
 
-        User loggedInUser = user.get();
-
         LoginHistory history = new LoginHistory();
-        history.setUserId(loggedInUser.getId());
+        history.setUserId(existingUser.getId());
         history.setLoginTime(LocalDateTime.now());
         history.setLoginMethod(loginMethod);
+
         loginHistoryRepository.save(history);
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("id", loggedInUser.getId());
-        response.put("fullName", loggedInUser.getFullName());
-        response.put("email", loggedInUser.getEmail());
-        response.put("mobile", loggedInUser.getMobile());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(toSafeUserResponse(existingUser));
     }
 
     // LOGOUT
@@ -185,7 +178,8 @@ public class UserController {
                 email.trim().toLowerCase());
 
         if (user.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
+            return ResponseEntity.badRequest()
+                    .body("User not found");
         }
 
         return ResponseEntity.ok(toSafeUserResponse(user.get()));
@@ -196,19 +190,22 @@ public class UserController {
     public ResponseEntity<?> getUserByMobile(
             @RequestParam String mobile) {
 
-        Optional<User> user = userRepository.findByMobile(mobile.trim());
+        Optional<User> user =
+                userRepository.findByMobile(mobile.trim());
 
         if (user.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
+            return ResponseEntity.badRequest()
+                    .body("User not found");
         }
 
         return ResponseEntity.ok(toSafeUserResponse(user.get()));
     }
 
-    // NEVER RETURN THE PASSWORD HASH
+    // RETURN USER DETAILS WITHOUT PASSWORD
     private Map<String, Object> toSafeUserResponse(User user) {
 
         Map<String, Object> response = new LinkedHashMap<>();
+
         response.put("id", user.getId());
         response.put("fullName", user.getFullName());
         response.put("email", user.getEmail());
