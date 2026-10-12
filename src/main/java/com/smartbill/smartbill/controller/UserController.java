@@ -7,6 +7,7 @@ import com.smartbill.smartbill.repository.UserRepository;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -16,10 +17,22 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = {
-    "https://smartbill-frontend-hazel.vercel.app",
-    "https://smartbill-frontend-myjnv4whz-inthiyaz99.vercel.app"
-})
+
+@CrossOrigin(
+    origins = {
+        "https://smartbill-frontend-hazel.vercel.app",
+        "https://smartbill-frontend-myjnv4whz-inthiyaz99.vercel.app"
+    },
+    allowedHeaders = "*",
+    methods = {
+        RequestMethod.GET,
+        RequestMethod.POST,
+        RequestMethod.PUT,
+        RequestMethod.DELETE,
+        RequestMethod.PATCH,
+        RequestMethod.OPTIONS
+    }
+)
 public class UserController {
 
     private final UserRepository userRepository;
