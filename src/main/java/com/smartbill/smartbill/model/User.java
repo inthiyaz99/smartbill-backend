@@ -1,3 +1,4 @@
+```java
 package com.smartbill.smartbill.model;
 
 import jakarta.persistence.*;
@@ -10,17 +11,20 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true, length = 20)
     private String mobile;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String password;
+
+    public User() {
+    }
 
     public Long getId() {
         return id;
@@ -58,3 +62,4 @@ public class User {
         this.password = password;
     }
 }
+```
