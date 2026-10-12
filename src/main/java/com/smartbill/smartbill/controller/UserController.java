@@ -15,7 +15,8 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = {
-        "https://smartbill-frontend-hazel.vercel.app"
+    "https://smartbill-frontend-hazel.vercel.app",
+    "https://smartbill-frontend-myjnv4whz-inthiyaz99.vercel.app"
 })
 public class UserController {
 
@@ -28,17 +29,20 @@ public class UserController {
     public UserController(
             UserRepository userRepository,
             LoginHistoryRepository loginHistoryRepository) {
-
         this.userRepository = userRepository;
         this.loginHistoryRepository = loginHistoryRepository;
     }
 
-    // =========================
     // REGISTER
-    // =========================
-
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
+
+        if (user.getEmail() == null || user.getEmail().isBlank()
+                || user.getPassword() == null || user.getPassword().isBlank()
+                || user.getMobile() == null || user.getMobile().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body("Name, email, mobile and password are required");
+        }
 
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             return ResponseEntity.badRequest()
@@ -50,184 +54,105 @@ public class UserController {
                     .body("Mobile number already registered");
         }
 
-        String hashedPassword =
-                passwordEncoder.encode(user.getPassword());
-
-        user.setPassword(hashedPassword);
-
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
 
-        return ResponseEntity.ok(
-                "User registered successfully"
-        );
+        return ResponseEntity.ok("User registered successfully");
     }
 
-    // =========================
     // LOGIN
-    // =========================
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User loginUser) {
 
-        Optional<User> user = Optional.empty();
-
+        Optional<User> user;
         String loginMethod;
 
-        // Login using EMAIL
-        if (loginUser.getEmail() != null &&
-                !loginUser.getEmail().isBlank()) {
-
-            user = userRepository.findByEmail(
-                    loginUser.getEmail()
-            );
-
+        if (loginUser.getEmail() != null
+                && !loginUser.getEmail().isBlank()) {
+            user = userRepository.findByEmail(loginUser.getEmail());
             loginMethod = "EMAIL";
-
-        } else {
-
-            // Login using MOBILE
-            user = userRepository.findByMobile(
-                    loginUser.getMobile()
-            );
-
+        } else if (loginUser.getMobile() != null
+                && !loginUser.getMobile().isBlank()) {
+            user = userRepository.findByMobile(loginUser.getMobile());
             loginMethod = "MOBILE";
+        } else {
+            return ResponseEntity.badRequest()
+                    .body("Email or mobile number is required");
         }
 
-        // User not found
         if (user.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body("User not found");
+            return ResponseEntity.badRequest().body("User not found");
         }
 
-        // Check password
-        boolean passwordMatches =
-                passwordEncoder.matches(
+        if (loginUser.getPassword() == null
+                || !passwordEncoder.matches(
                         loginUser.getPassword(),
-                        user.get().getPassword()
-                );
-
-        if (!passwordMatches) {
-            return ResponseEntity.badRequest()
-                    .body("Invalid password");
+                        user.get().getPassword())) {
+            return ResponseEntity.badRequest().body("Invalid password");
         }
 
-        // Save login history
         LoginHistory history = new LoginHistory();
-
         history.setUserId(user.get().getId());
-
-        history.setLoginTime(
-                LocalDateTime.now()
-        );
-
+        history.setLoginTime(LocalDateTime.now());
         history.setLoginMethod(loginMethod);
-
         loginHistoryRepository.save(history);
 
-        // Login successful
-        return ResponseEntity.ok(
-                user.get()
-        );
+        return ResponseEntity.ok(user.get());
     }
 
-    // =========================
     // LOGOUT
-    // =========================
-
     @PostMapping("/logout/{userId}")
-    public ResponseEntity<?> logout(
-            @PathVariable Long userId) {
+    public ResponseEntity<?> logout(@PathVariable Long userId) {
 
         Optional<LoginHistory> history =
-                loginHistoryRepository.findAll()
-                        .stream()
-                        .filter(h ->
-                                h.getUserId().equals(userId)
-                                &&
-                                h.getLogoutTime() == null
-                        )
-                        .reduce(
-                                (first, second) -> second
-                        );
+                loginHistoryRepository.findAll().stream()
+                        .filter(h -> h.getUserId() != null
+                                && h.getUserId().equals(userId)
+                                && h.getLogoutTime() == null)
+                        .reduce((first, second) -> second);
 
         if (history.isPresent()) {
-
-            LoginHistory loginHistory =
-                    history.get();
-
-            loginHistory.setLogoutTime(
-                    LocalDateTime.now()
-            );
-
-            loginHistoryRepository.save(
-                    loginHistory
-            );
-
-            return ResponseEntity.ok(
-                    "Logged out successfully"
-            );
+            LoginHistory loginHistory = history.get();
+            loginHistory.setLogoutTime(LocalDateTime.now());
+            loginHistoryRepository.save(loginHistory);
         }
 
-        return ResponseEntity.ok(
-                "Logout recorded"
-        );
+        return ResponseEntity.ok("Logout recorded");
     }
 
-    // =========================
     // LOGIN HISTORY
-    // =========================
-
     @GetMapping("/login-history/{userId}")
-    public ResponseEntity<?> getLoginHistory(
-            @PathVariable Long userId) {
-
+    public ResponseEntity<?> getLoginHistory(@PathVariable Long userId) {
         return ResponseEntity.ok(
                 loginHistoryRepository
-                        .findByUserIdOrderByLoginTimeDesc(
-                                userId
-                        )
-        );
+                        .findByUserIdOrderByLoginTimeDesc(userId));
     }
 
-    // =========================
     // FIND USER BY EMAIL
-    // =========================
-
     @GetMapping("/by-email")
     public ResponseEntity<?> getUserByEmail(
             @RequestParam String email) {
 
-        Optional<User> user =
-                userRepository.findByEmail(email);
+        Optional<User> user = userRepository.findByEmail(email);
 
         if (user.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body("User not found");
+            return ResponseEntity.badRequest().body("User not found");
         }
 
-        return ResponseEntity.ok(
-                user.get()
-        );
+        return ResponseEntity.ok(user.get());
     }
 
-    // =========================
     // FIND USER BY MOBILE
-    // =========================
-
     @GetMapping("/by-mobile")
     public ResponseEntity<?> getUserByMobile(
             @RequestParam String mobile) {
 
-        Optional<User> user =
-                userRepository.findByMobile(mobile);
+        Optional<User> user = userRepository.findByMobile(mobile);
 
         if (user.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body("User not found");
+            return ResponseEntity.badRequest().body("User not found");
         }
 
-        return ResponseEntity.ok(
-                user.get()
-        );
+        return ResponseEntity.ok(user.get());
     }
 }
